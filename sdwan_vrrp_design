@@ -1,0 +1,175 @@
+# 📘 Cisco SD-WAN VRRP — Consolidated Notes
+
+---
+
+## 🔹 1. Purpose of VRRP in SD-WAN
+
+* Provides **first-hop redundancy** for LAN-side hosts.
+* Hosts use a **Virtual IP (VIP)** as their **default gateway**.
+* Multiple WAN Edge routers work together so that if the primary fails, a backup takes over **seamlessly**.
+
+---
+
+## 🔹 2. VRRP Fundamentals
+
+* **Virtual IP (VIP):** Shared among routers in a VRRP group, used by LAN hosts as default gateway.
+* **Virtual MAC:** `00-00-5E-00-01-<VRID>` (VRID = group number).
+* **Master Router:** Actively responds to ARP for the VIP using the Virtual MAC.
+* **Backup Router(s):** Standby, ready to take over.
+
+---
+
+## 🔹 3. Failover Mechanism
+
+* **Advertisements:** Sent by the Master every 1 sec (default).
+* **Failure Detection:** If 3 adverts missed → Backup takes over.
+* **Gratuitous ARP:** Sent by new Master to update:
+
+  * Host ARP tables (VIP → Virtual MAC).
+  * Switch CAM tables (Virtual MAC → correct port).
+* **Election Rules:**
+
+  * Highest **priority** wins (1–254, default = 100).
+  * If tie → highest **interface IP** wins.
+* **Preemption:** VRRP by default allows a higher-priority router to reclaim Master role after recovery.
+
+---
+
+## 🔹 4. VRRP in Cisco SD-WAN (Viptela OS)
+
+* VRRP configured on **service-side VPNs only** (not VPN 0, VPN 512).
+* Typically configured on **subinterfaces (VLANs)**.
+* For each subinterface:
+
+  * Assign an IP address.
+  * Place into a **VRRP group**.
+  * Configure a **VIP**.
+* Supports up to **512 VRRP groups per router**.
+* Example:
+
+  * Subinterface `ge0/1.2` → VRRP Group 2 → VIP `10.2.2.1`
+  * Subinterface `ge0/1.3` → VRRP Group 3 → VIP `10.2.3.1`
+
+---
+
+## 🔹 5. WAN Connectivity & OMP Tracking
+
+VRRP runs on **LAN interfaces**, so by default it doesn’t know WAN status.
+To ensure failover happens correctly, SD-WAN adds **tracking options**:
+
+1. **Track OMP session:**
+
+   * If all OMP sessions lost → failover triggered.
+   * Uses OMP hold timer (default 60 sec).
+   * During this time, overlay traffic is dropped.
+
+2. **Track OMP + Prefix List:**
+
+   * Monitors both OMP sessions **and** remote prefix reachability.
+   * If prefixes unreachable → failover happens **immediately**, avoiding long traffic drops.
+
+---
+
+## 🔹 6. MTU Consideration (802.1Q VLAN Tagging)
+
+* VLAN tagging adds **4 bytes** to packet size.
+* Options:
+
+  * Increase MTU on physical interface (VPN 0).
+  * Or decrease MTU on subinterface with VRRP.
+* Default MTU = 1500 → adjust to 1496 or set physical to 1504.
+
+---
+
+## 🔹 7. Example Configurations
+
+### **vEdge1**
+
+```plaintext
+interface ge0/1.2
+ ip address 10.2.2.2/24
+ mtu 1496
+ vrrp 2
+  ipv4 10.2.2.1
+  track-prefix-list vrrp-tracked-prefixes
+!
+interface ge0/1.3
+ ip address 10.2.3.2/24
+ mtu 1496
+ vrrp 3
+  ipv4 10.2.3.1
+  track-prefix-list vrrp-tracked-prefixes
+!
+```
+
+### **vEdge2**
+
+```plaintext
+interface ge0/1.2
+ ip address 10.2.2.3/24
+ mtu 1496
+ vrrp 2
+  ipv4 10.2.2.1
+  track-prefix-list vrrp-tracked-prefixes
+!
+interface ge0/1.3
+ ip address 10.2.3.3/24
+ mtu 1496
+ vrrp 3
+  ipv4 10.2.3.1
+  track-prefix-list vrrp-tracked-prefixes
+!
+```
+
+### **IOS-XE Style (Edge1 & Edge2)**
+
+Edge1#show running-config interface GigabitEthernet1
+Interface GigabitEthernet1
+ vrf forwarding 1
+ ip address 10.1.1.11 255.255.255.0
+ no ip redirects
+ load-interval 30
+ ncgotitation auto
+ vrrp 1 address-family ipv4
+  timers advertise 100
+  priority 254
+  vrrpv2
+  track omp shutdown
+  address 10.1.1.1 primary
+ exit-vrrp
+ arp timeout 1200
+ no mop enabled
+ no mop sysid
+end
+
+Edge2#show running-config interface GigabitEthernet1
+Interface GigabitEthernet1
+ vrf forwarding 1
+ ip address 10.1.1.12 255.255.255.0
+ no ip redirects
+ load-interval 30
+ ncgotitation auto
+ vrrp 1 address-family ipv4
+  timers advertise 100
+  vrrpv2
+  track omp shutdown
+  address 10.1.1.1 primary
+ exit-vrrp
+ arp timeout 1200
+ no mop enabled
+ no mop sysid
+end
+
+---
+
+## ✅ Summary
+
+* VRRP ensures **LAN-side gateway redundancy** in SD-WAN.
+* Works with **Virtual IP + Virtual MAC**.
+* Failover = **advertisements + gratuitous ARP**.
+* **Election** = priority → highest IP.
+* **Preemption** is default in VRRP.
+* **OMP tracking** is crucial to avoid blackholing traffic.
+* **Prefix tracking** improves failover speed.
+* **MTU adjustment** needed with VLANs.
+

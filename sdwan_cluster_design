@@ -1,0 +1,81 @@
+
+
+## 🔹 vManage Clusters
+
+- Cluster Size Factors:
+
+  - Not only based on WAN Edge count.
+  - Also depends on statistics and DPI (Deep Packet Inspection) data generated.
+  - Cisco publishes release notes with server requirements to guide sizing.
+- Cluster Options:
+
+  - Standalone, 3-node cluster, or 6-node cluster (max today).
+  - Used primarily for scale and redundancy.
+- Geo-Redundancy:
+
+  - Officially not supported due to latency requirements (≤ 4 ms).
+  - Technically possible with dark fiber but not recommended (risk of cluster split).
+- Redundancy Model:
+
+  - N+1 redundancy: cluster continues operating if one node fails.
+- Disaster Recovery (DR):
+
+  - Active cluster in one data center, backup in another.
+  - DR mode: admin-triggered failover (not automatic).
+  - Synchronization happens over DCI link (stats DB, config DB).
+
+---
+
+## 🔹 vSmart Controllers
+
+- Scaling:
+
+  - Up to 20 vSmarts in a domain.
+  - Each supports \~5,400 DTLS control connections.
+- Bottlenecks:
+
+  - In practice, vManage scales out first before vSmart hits its limits.
+  - Issues may arise more in terms of routes on a single vSmart, not overall connections.
+- Future:
+
+  - Cisco plans to expand scaling limits for WAN edge routers and clustering.
+
+---
+
+## 🔹 vBond Orchestrators
+
+- Role:
+
+  - Critical for onboarding: WAN Edges cannot join the fabric without vBond authentication.
+  - Provides WAN edge info about vManage and vSmart controllers.
+- Connection Type:
+
+  - Connections are transient, unlike vManage/vSmart.
+- Deployment Guidance:
+
+  - Minimum 2 vBonds recommended.
+  - Up to 6 vBonds supported.
+  - Since they consume low server resources, it’s wise not to minimize them.
+- Recovery Scenarios:
+
+  - Important during mass reconnection (e.g., after outage).
+
+---
+
+✅ Summary:
+
+- vManage clusters are the most sensitive: plan based on scale (WAN Edges + data load), keep them in one location, and use admin-triggered DR.
+- vSmart rarely hits scaling limits today but will evolve.
+- vBond is lightweight but crucial: at least 2 for resilience.
+
+
+Here’s the point written clearly and aligned with the style of the other notes:
+
+- Active-Active Datacenter Design:
+
+  - Not supported for vManage.
+  - vManage clusters operate in an Active-Standby mode (with disaster recovery setup).
+  - Only the Active cluster handles management; the Standby cluster takes over when triggered by the admin.
+
+
+

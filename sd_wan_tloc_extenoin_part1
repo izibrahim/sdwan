@@ -1,0 +1,76 @@
+---
+
+## 🔹 What is TLOC Extension?
+
+* **TLOC (Transport Locator)** = tuple of *system-IP, color, encapsulation* that identifies a WAN Edge’s transport connection.
+* **TLOC Extension** allows one WAN Edge to **share its transport circuit** (e.g., MPLS or Internet) with another WAN Edge over a local link.
+* Purpose: **cost saving + redundancy** when you don’t want to buy dual circuits for every WAN Edge.
+
+---
+
+## 🔹 Why Use It?
+
+* Without TLOC extension: each WAN Edge must have its own MPLS and Internet link for redundancy.
+* With TLOC extension:
+
+  * WAN Edge-1 may have MPLS only.
+  * WAN Edge-2 may have Internet only.
+  * By extending TLOCs, both routers can use **both transports**.
+* Gives you **dual-homing** benefits with fewer circuits.
+
+---
+
+## 🔹 Types of TLOC Extension
+
+1. **Layer 3 Direct**
+
+   * Two WAN Edges connected directly (physical/subinterface).
+   * Same subnet configured, static/dynamic routing used.
+   * Most common method.
+
+2. **Layer 3 Indirect**
+
+   * Two WAN Edges connected through a **third router** (hub).
+   * Subnets routed via intermediate device.
+
+3. **Layer 2 (via Switch)**
+
+   * Two WAN Edges bridged over a switch.
+   * Sometimes uses L2TP tunnel between them.
+
+---
+
+## 🔹 How It Works
+
+* Example:
+
+  * WAN Edge-1 connects directly to **MPLS**.
+  * WAN Edge-2 connects directly to **Internet**.
+  * Between them, a **LAN link** (L3 adjacency).
+* Each router advertises its transport TLOC to the other over this link.
+* Result:
+
+  * WAN Edge-1 can build IPsec tunnels to Internet via WAN Edge-2.
+  * WAN Edge-2 can build IPsec tunnels to MPLS via WAN Edge-1.
+
+---
+
+## 🔹 Key Requirements
+
+* Local link (the TLOC extension interface) must be in the **same VPN 0**.
+* Subnet used between WAN Edges must be **reachable and advertised** (via static or routing protocol).
+* In vManage, under the **VPN 0 interface template**, enable **TLOC Extension** and specify the interface.
+
+---
+
+## 🔹 Failover Scenarios
+
+* If MPLS fails on WAN Edge-1 → both routers use Internet (direct + via TLOC).
+* If Internet fails on WAN Edge-2 → both routers use MPLS.
+* If one WAN Edge fails → the surviving WAN Edge still provides connectivity to both transports.
+
+---
+
+✅ **Summary:**
+Cisco SD-WAN **TLOC Extension** allows WAN Edges to share transport circuits (MPLS/Internet) via local connectivity. It reduces cost while keeping **dual-homing redundancy**. Types include **direct L3, indirect L3, and L2 extension**. Config is done in **VPN 0** on vManage by enabling *TLOC Extension* on the local link interface.
+

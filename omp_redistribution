@@ -1,0 +1,42 @@
+🔹 Default OMP Redistribution
+
+On a WAN Edge router, OMP will automatically take these routes into OMP (no config needed):
+
+✅ Connected routes
+
+✅ Static routes
+
+✅ OSPF intra-area routes
+
+✅ OSPF inter-area routes
+
+That means if your branch has connected LAN subnets or static routes, they’re automatically advertised into the SD-WAN fabric via OMP.
+
+🔹 What requires explicit configuration
+
+The following are NOT automatically redistributed. You must configure them manually if needed:
+
+BGP routes
+
+OSPF external routes (type 5, type 7)
+
+EIGRP routes
+
+👉 Why?
+Because these can lead to routing loops or excessive routing information if blindly redistributed.
+
+🔹 Routes learned from OMP are not auto-redistributed
+
+Even if a WAN Edge receives routes via OMP, it will not automatically inject them into local routing protocols (like OSPF/BGP toward the LAN/MPLS).
+
+If you want that, you must configure OMP → protocol redistribution manually.
+
+👉 This prevents dumping the entire SD-WAN fabric routing table into the underlay network.
+
+🔹 Loop prevention example (your WAN Edge1 → WAN Edge2 → WAN Edge3 case)
+
+WAN Edge1 advertises OSPF routes (intra/inter-area) into OMP.
+
+WAN Edge2 & WAN Edge3 learn them via OMP.
+
+If WAN Edge2 & WAN Edge3 are configured to redistribute OMP → BGP/OSPF, then WAN Edge3 might advertise those routes back into the fabric, causing loops (learned → re-advertised → comes back).

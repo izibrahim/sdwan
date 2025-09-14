@@ -58,3 +58,59 @@ This way, **each WAN Edge can use both Internet & MPLS**, even though physically
 TLOC Extension makes sure both WAN Edge routers can use all available transports, even if physically only one is connected. But you need careful routing design (default routes, NAT for internet, BGP/OSPF for MPLS) so controllers and remote sites can reach both WAN Edges correctly.
 
 ---
+
+## 🔹 What the `tloc-extension` command does
+
+* It **binds** the non-connected router to the transport (Internet/MPLS) via the connected router.
+* You apply it on the **transport-facing interface of the router that actually has the circuit**.
+* Then the peer router (non-connected) uses a **LAN/subnet link** (e.g., `ge0/7 ↔ ge0/7`) to reach that transport.
+
+---
+
+## 🔹 Two cases
+
+### 1. **Public Network (Internet)**
+
+* Issue: Both WAN Edges will share the same Internet-facing IP when extended.
+* Solution:
+
+  * Configure **NAT** on the Internet-facing interface of the connected WAN Edge (so both can share it).
+  * Configure a **static default route** on the non-connected router pointing to the TLOC-extension interface of the connected router.
+
+👉 Example:
+WAN Edge 1 → Internet via WAN Edge 2
+
+```
+ip route 0.0.0.0/0 <WAN-Edge-2-LAN-IP>
+```
+
+---
+
+### 2. **Private Network (MPLS)**
+
+* Issue: Private MPLS network needs to know how to return traffic to the non-connected router.
+* Solution:
+
+  * Run a **routing protocol (BGP/OSPF)** in VPN 0 between WAN Edge routers and MPLS PE.
+  * Non-connected router’s TLOC subnet is advertised into the MPLS network.
+  * If dynamic routing isn’t possible → configure **static routes on PE** toward the non-connected router (but not scalable).
+
+---
+
+## 🔹 Restrictions
+
+* ❌ Cannot extend a TLOC configured on a **loopback interface**. Only physical interfaces are valid.
+* ✅ If one router has **two transports (INET + MPLS)** and you extend both → you need **subinterfaces** between the two routers.
+
+  * Subinterfaces must be in the **same subnet**.
+  * Reduce MTU by **at least 4 bytes** compared to physical MTU.
+
+---
+
+## 🔹 Key takeaway
+
+* **Internet TLOC Extension → NAT + static route**
+* **MPLS TLOC Extension → Routing protocol (OSPF/BGP) or static route on PE**
+* Always extend only from **physical transport-facing interfaces**, never loopbacks.
+
+

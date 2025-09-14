@@ -1,0 +1,60 @@
+
+
+## 🔹 What’s happening in this design 
+
+* **Two WAN Edge routers at the branch (WAN Edge 1 & 2)**.
+* Each router has access to **only one transport directly**:
+
+  * WAN Edge 1 → MPLS
+  * WAN Edge 2 → Internet
+* To make both transports available to both routers, a **TLOC Extension (Tunnel Locator Extension)** is used:
+
+  * WAN Edge 1 extends its MPLS transport to WAN Edge 2.
+  * WAN Edge 2 extends its Internet transport to WAN Edge 1.
+
+This way, **each WAN Edge can use both Internet & MPLS**, even though physically each connects to only one.
+
+---
+
+## 🔹 Key routing considerations
+
+1. **Static default routes in VPN 0 (transport VRF):**
+
+   * Each WAN Edge must know how to reach the provider next-hop.
+   * Example:
+
+     * WAN Edge 1’s INET interface (ge0/4) → default route to WAN Edge 2’s ge0/7.
+     * WAN Edge 2’s MPLS interface (ge0/2) → default route to WAN Edge 1’s ge0/7.
+
+2. **NAT requirement:**
+
+   * If Subnet A (between WAN Edge 1 & 2) is private addressing, then WAN Edge 2’s Internet-facing interface (ge0/4) must do **NAT**.
+   * This ensures return traffic from the Internet can be sent back to WAN Edge 1 through WAN Edge 2.
+
+3. **Dynamic routing vs static:**
+
+   * For MPLS return path:
+
+     * Best practice: run a routing protocol (like **BGP or OSPF**) in VPN 0 between WAN Edge 1 and the MPLS PE.
+     * WAN Edge 1 advertises Subnet B so MPLS provider knows how to route back.
+   * Alternate (not recommended): configure static routes on MPLS PE to Subnet B → redistributed across MPLS network.
+
+4. **Route filtering:**
+
+   * A **route-map inbound** is often applied on WAN Edge 1 to block unwanted dynamic routes from MPLS provider.
+   * Only the default route is needed for control plane and tunnel establishment.
+
+---
+
+## 🔹 Why this design
+
+* **Use case:** Branch has two routers, but each transport circuit lands on a different router.
+* **TLOC Extension** lets them share transports → so both routers can form IPsec tunnels over both Internet & MPLS.
+* **Benefit:** Full redundancy + dual transport reachability with only one circuit per router.
+
+---
+
+✅ **In short:**
+TLOC Extension makes sure both WAN Edge routers can use all available transports, even if physically only one is connected. But you need careful routing design (default routes, NAT for internet, BGP/OSPF for MPLS) so controllers and remote sites can reach both WAN Edges correctly.
+
+---

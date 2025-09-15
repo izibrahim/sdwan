@@ -1,0 +1,93 @@
+🔹 Default OMP Redistribution
+
+On a WAN Edge router, OMP will automatically take these routes into OMP (no config needed):
+
+✅ Connected routes
+
+✅ Static routes
+
+✅ OSPF intra-area routes
+
+✅ OSPF inter-area routes
+
+That means if your branch has connected LAN subnets or static routes, they’re automatically advertised into the SD-WAN fabric via OMP.
+
+🔹 What requires explicit configuration
+
+The following are NOT automatically redistributed. You must configure them manually if needed:
+
+BGP routes
+
+OSPF external routes (type 5, type 7)
+
+EIGRP routes
+
+👉 Why?
+Because these can lead to routing loops or excessive routing information if blindly redistributed.
+
+🔹 Routes learned from OMP are not auto-redistributed
+
+Even if a WAN Edge receives routes via OMP, it will not automatically inject them into local routing protocols (like OSPF/BGP toward the LAN/MPLS).
+
+If you want that, you must configure OMP → protocol redistribution manually.
+
+👉 This prevents dumping the entire SD-WAN fabric routing table into the underlay network.
+
+🔹 Loop prevention example (your WAN Edge1 → WAN Edge2 → WAN Edge3 case)
+
+WAN Edge1 advertises OSPF routes (intra/inter-area) into OMP.
+
+WAN Edge2 & WAN Edge3 learn them via OMP.
+
+If WAN Edge2 & WAN Edge3 are configured to redistribute OMP → BGP/OSPF, then WAN Edge3 might advertise those routes back into the fabric, causing loops (learned → re-advertised → comes back).
+
+WAN Edge1 learns 10.1.1.0/24 from OSPF (internal) and redistributes it into OMP.
+
+WAN Edge2 and WAN Edge3 both receive 10.1.1.0/24 from OMP (this is the correct path).
+
+Now WAN Edge2 also redistributes that OMP route into its local OSPF process (so LAN/PE devices see it).
+
+It injects it as an OSPF External LSA with the DN-bit set.
+
+When WAN Edge3 receives this OSPF LSA:
+
+It sees the DN-bit = 1.
+
+Rule: OSPF must ignore any LSA with the DN-bit set in SPF calculation.
+
+👉 So yes — WAN Edge3 will not install 10.1.1.0/24 into OSPF from WAN Edge2’s advertisement.
+
+
+---
+
+## 🔹 BGP Route Redistribution
+
+* **Loop detection in classic BGP**: relies on the **AS-Path attribute**.
+
+  * Each EBGP router prepends its AS number.
+  * If a router sees its own AS in the path, it rejects the update → prevents routing loops.
+* **In Cisco SD-WAN**: OMP does **not carry AS-Path**, so BGP loop prevention cannot use AS-Path.
+* **Solution**: Cisco SD-WAN uses **Site of Origin (SoO)** extended community.
+
+  * SoO tags mark the originating site.
+  * If another WAN Edge in the same site sees a route with its own SoO tag, it drops it → loop prevention.
+
+---
+
+## 🔹 EIGRP Route Redistribution
+
+* EIGRP can run on IOS-XE SD-WAN WAN Edge routers.
+* When an OMP route is redistributed into EIGRP:
+
+  * It is tagged with **External Protocol = OMP-Agent**.
+  * The receiving WAN Edge installs it in the **EIGRP topology table** with an **administrative distance (AD) of 252**.
+* Since the default AD of OMP routes is 251, the OMP-learned path is always preferred.
+* Effect: prevents loops because redistributed routes will never override the direct OMP routes.
+
+---
+
+✅ **Summary of Loop Prevention Techniques in SD-WAN Redistribution**
+
+* **OSPF** → RFC 4577 DN-bit in LSAs.
+* **BGP** → Site of Origin (SoO) community (instead of AS-Path).
+* **EIGRP** → OMP-Agent tagging + AD 252 (OMP route preferred).

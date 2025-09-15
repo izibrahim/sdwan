@@ -1,0 +1,35 @@
+1. Full Cone NAT (Most Friendly)
+
+Any external host can send packets to the internal host, once the mapping is created.
+
+No restrictions on IP or port.
+
+Effect in SD-WAN: Very easy for vEdges, vBond, vSmart, vManage to communicate — tunnels come up without issues.
+
+🔹 2. Address-Restricted Cone NAT
+
+External traffic is allowed only if the source IP matches the IP the internal host has already communicated with.
+
+Restricts by IP address only.
+
+Effect in SD-WAN: If WAN Edge2 tries to connect from a new/different public IP, it will be blocked unless it matches the registered IP.
+
+🔹 3. Port-Restricted Cone NAT
+
+Similar to Address-Restricted, but restriction applies to both IP and Port.
+
+External traffic is only allowed if it comes from the same IP + Port the internal device used previously.
+
+Effect in SD-WAN: If port numbers change (e.g., manual config, firewall translation), connectivity may fail. Must match the exact source port.
+
+🔹 4. Symmetric NAT (Most Strict / Problematic)
+
+Triple restriction:
+
+Must come from the same public IP.
+
+Must come from the same source port.
+
+Cannot initiate sessions from outside — only replies to existing sessions are allowed.
+
+Effect in SD-WAN: Most challenging for vEdges because new control/data-plane tunnels cannot be initiated from outside. Often requires STUN/vBond assistance to traverse.

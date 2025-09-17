@@ -1,0 +1,108 @@
+Key Concepts
+
+Policy role: Main job of an SD-WAN engineer (≈70% of work) → tweak and control traffic flow in the fabric.
+
+Two traffic categories:
+
+Control plane policies → affect OMP updates (between vSmart ↔ routers).
+
+Data plane policies → affect user/application traffic (between routers).
+
+📌 Policy Types
+
+1 - Centralized Policies
+
+Configured in vManage, enforced by vSmart.
+
+Affect the entire SD-WAN fabric.
+
+Examples:
+
+Centralized control: Influence OMP routes/updates globally.
+
+Centralized data: Influence data traffic across all routers (QoS, service chaining, firewalling, traffic engineering, app-aware routing, etc.).
+
+2- Localized Policies
+
+Applied on a specific device only.
+
+Examples:
+
+Localized control: vSmart ↔ single router OMP updates.
+
+Localized data: ACLs, QoS, shaping/policing, applied to one router.
+
+=====
+🛠 Policy Configuration – Step by Step
+Step 1 – Classify the Traffic (Group of Interest)
+
+Decide what traffic you want to control.
+
+Build “groups of interest” such as:
+
+Applications (NBAR2 up to ~1400 apps)
+
+IP prefixes (IPv4 / IPv6)
+
+Sites (site list)
+
+VPNs (VPN list)
+
+TLOCs (system IP, color, encapsulation, preference)
+
+Communities, Data prefixes, Policers etc.
+
+➡️ This step = identifying which traffic to match.
+
+Step 2 – Define the Action (Policy Definition)
+
+Depending on control or data traffic, you configure one of these:
+
+2a – Control Plane Policy
+
+Focus: OMP updates (routing/control information).
+
+Actions include:
+
+Topology: Hub-and-Spoke, Mesh, Partial Mesh.
+
+VPN membership: Define which sites belong to which VPNs.
+
+2b – Data Plane Policy
+
+Focus: actual application/data traffic.
+
+Actions include:
+
+Application-aware routing
+
+Traffic engineering (TE)
+
+QoS (priority, shaping, policing)
+
+Firewall rules / ACLs
+
+Service chaining (redirect to services like firewall/IDS)
+
+Cflowd (flow monitoring)
+
+⚠️ You do not configure both 2a and 2b together → choose one type depending on the traffic.
+
+Step 3 – Apply and Activate Policy
+
+After definition, apply the policy to sites or VPNs.
+
+In Centralized Policy:
+
+Policy is pushed via vManage.
+
+Enforced by vSmart across the entire fabric.
+
+In Localized Policy:
+
+Policy is applied only on a specific device.
+
+Finally, click Activate in vManage → policy takes effect.
+
+✅ Summary Flow:
+Classify → Define Action → Apply & Activate

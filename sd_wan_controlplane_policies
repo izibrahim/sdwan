@@ -106,3 +106,47 @@ Finally, click Activate in vManage → policy takes effect.
 
 ✅ Summary Flow:
 Classify → Define Action → Apply & Activate
+
+🔑 Cisco SD-WAN Policy Types
+1. Centralized Control Policy
+
+Where: Configured on vSmart (never pushed to WAN Edges).
+
+Effect: Modifies routing information in vSmart’s RIB and what OMP routes it advertises.
+
+Impact: Influences network-wide routing decisions and how WAN Edges forward overlay data traffic.
+
+2. Centralized Data Policy
+
+Where: Configured on vSmart, but pushed to WAN Edge routers.
+
+Effect: Controls data traffic across the VPNs in the fabric.
+
+Criteria: 6-tuple (Src/Dst IP, Src/Dst Port, Protocol, DSCP) or VPN membership.
+
+Examples: Traffic filtering, segmentation, app-aware routing, QoS.
+
+3. Localized Control Policy (Route Policy)
+
+Where: Configured directly on a WAN Edge router.
+
+Effect: Affects site-local routing behavior (route filtering, redistribution, preference, etc.).
+
+4. Localized Data Policy
+
+Where: Configured directly on a WAN Edge router.
+
+Effect: Controls traffic at the interface level.
+
+Capabilities:
+
+ACLs (6-tuple match like centralized data)
+
+Class of Service (CoS)
+
+Policing
+
+Mirroring
+
+Interface queue control
+
